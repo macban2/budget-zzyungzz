@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>지출 입력</title>
+<style>
+:root {
+  --bg:#f5f4f0; --surface:#fff; --surface2:#f0efe9;
+  --border:rgba(0,0,0,0.08); --border2:rgba(0,0,0,0.15);
+  --text:#1a1a18; --text2:#6b6b65; --text3:#9e9e96;
+  --accent:#1a1a18; --expense:#c94040; --income:#2a7a4b;
+  --fix-bg:#e8edf5; --fix-text:#1e3a6e;
+  --var-bg:#f5ece0; --var-text:#7a3e10;
+  --cr-bg:#f0e8f5; --cr-text:#5a1e8a;
+  --r:14px; --rs:10px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; padding-bottom:40px; }
+
+/* 헤더 */
+.header { background:var(--surface); padding:16px 20px 14px; border-bottom:0.5px solid var(--border); position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; }
+.header-title { font-size:17px; font-weight:700; }
+.header-month { font-size:13px; color:var(--text2); font-weight:500; }
+
+/* 탭 */
+.tabs { display:flex; background:var(--surface); border-bottom:0.5px solid var(--border); }
+.tab { flex:1; padding:11px 0; font-size:13px; font-weight:600; color:var(--text3); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; }
+.tab.active { color:var(--text); border-bottom-color:var(--text); }
+
+/* 폼 */
+.form-wrap { padding:16px; }
+.card { background:var(--surface); border-radius:var(--r); border:0.5px solid var(--border); padding:18px; margin-bottom:12px; }
+.field { margin-bottom:14px; }
+.field:last-child { margin-bottom:0; }
+.flabel { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:6px; display:block; }
+select, input[type=text], input[type=number], input[type=date] {
+  width:100%; height:48px; border-radius:var(--rs); border:0.5px solid var(--border2);
+  background:var(--surface2); padding:0 14px; font-size:15px; color:var(--text);
+  font-family:inherit; outline:none; appearance:none; -webkit-appearance:none;
+}
+select { background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%236b6b65' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+input[type=number] { font-size:22px; font-weight:700; height:56px; }
+input:focus, select:focus { border-color:var(--accent); background:var(--surface); }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* 카드 탭 */
+.card-tabs { display:flex; gap:6px; }
+.card-tab { flex:1; padding:10px 4px; border-radius:var(--rs); border:0.5px solid var(--border2); background:var(--surface2); font-size:12px; font-weight:600; color:var(--text2); cursor:pointer; text-align:center; line-height:1.4; transition:all 0.12s; }
+.card-tab.on { background:var(--accent); color:white; border-color:var(--accent); }
+.card-tab.on.kakao { background:#FEE500; color:#3A1D1D; border-color:#e6cf00; }
+.card-tab.on.kb { background:#F06400; color:white; border-color:#d45700; }
+.card-tab.on.ibk { background:#00AEEF; color:white; border-color:#0099d4; }
+
+/* 신용카드 안내 */
+.cr-notice { display:none; background:var(--cr-bg); border-radius:var(--rs); padding:9px 12px; font-size:12px; color:var(--cr-text); margin-top:8px; line-height:1.5; }
+.cr-notice.show { display:block; }
+
+/* 인라인 추가박스 */
+.add-box { display:none; background:var(--surface2); border-radius:var(--rs); border:0.5px solid var(--border2); padding:10px 12px; margin-top:8px; }
+.add-box-label { font-size:11px; font-weight:600; color:var(--text2); margin-bottom:7px; }
+.add-box-row { display:flex; gap:6px; }
+.add-box-row input { flex:1; height:40px; font-size:14px; }
+.add-box-row .ok { height:40px; padding:0 14px; border-radius:var(--rs); background:var(--accent); color:white; border:none; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.add-box-row .cl { height:40px; padding:0 12px; border-radius:var(--rs); background:none; border:0.5px solid var(--border2); font-size:13px; color:var(--text2); cursor:pointer; }
+
+/* 버튼 */
+.submit-btn { width:100%; height:54px; border-radius:var(--r); background:var(--accent); color:white; font-size:16px; font-weight:700; border:none; cursor:pointer; margin-top:4px; letter-spacing:-0.3px; }
+.submit-btn:active { opacity:0.8; }
+.submit-btn.secondary { background:none; border:0.5px dashed var(--border2); color:var(--text3); font-size:13px; height:42px; margin-top:8px; }
+
+/* 최근 내역 */
+.recent-wrap { padding:0 16px; }
+.recent-title { font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; }
+.item { background:var(--surface); border-radius:var(--rs); border:0.5px solid var(--border); padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.item.card-kakao { border-left:3px solid #e6cf00; }
+.item.card-kb { border-left:3px solid #d45700; }
+.item.card-ibk { border-left:3px solid #0099d4; }
+.ibadge { font-size:11px; font-weight:600; padding:3px 7px; border-radius:20px; flex-shrink:0; background:var(--var-bg); color:var(--var-text); }
+.ibadge.unc { background:#faeeda; color:#633806; }
+.iinfo { flex:1; min-width:0; }
+.imain { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.isub { font-size:11px; color:var(--text3); margin-top:1px; }
+.iamt { font-size:13px; font-weight:700; color:var(--expense); flex-shrink:0; white-space:nowrap; }
+.empty { text-align:center; color:var(--text3); font-size:13px; padding:30px 0; line-height:2; }
+
+/* 토스트 */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(26,26,24,0.92); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:500; z-index:999; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">변동 지출 입력</div>
+  <div class="header-month" id="cur-month"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('add')">입력</button>
+  <button class="tab" onclick="switchTab('recent')">최근 내역</button>
+</div>
+
+<!-- 입력 탭 -->
+<div id="tab-add">
+<div class="form-wrap">
+  <div class="card">
+
+    <div class="field">
+      <label class="flabel">카드</label>
+      <div class="card-tabs">
+        <button class="card-tab on kakao" onclick="selCard('카카오뱅크 체크카드',this)">카카오뱅크<br>체크카드</button>
+        <button class="card-tab kb" onclick="selCard('국민은행 신용카드',this)">국민은행<br>신용카드</button>
+        <button class="card-tab ibk" onclick="selCard('IBK 신용카드',this)">IBK<br>신용카드</button>
+      </div>
+      <input type="hidden" id="inp-card" value="카카오뱅크 체크카드">
+      <div class="cr-notice" id="cr-notice">신용카드: 이번달 사용분은 다음달 지출로 집계돼요.</div>
+    </div>
+
+    <div class="field">
+      <label class="flabel">날짜</label>
+      <input type="date" id="inp-date">
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label class="flabel">대분류</label>
+        <select id="inp-main" onchange="onMainChange()" onclick="onMainClick()"></select>
+      </div>
+      <div class="field">
+        <label class="flabel">소분류</label>
+        <select id="inp-sub" onchange="onSubChange()" onclick="onSubClick()"></select>
+      </div>
+    </div>
+
+    <div class="add-box" id="cat-add-box">
+      <div class="add-box-label" id="cat-add-label"></div>
+      <div class="add-box-row">
+        <input type="text" id="cat-add-input" placeholder="이름 입력" onkeydown="if(event.key==='Enter')confirmCatAdd()">
+        <button class="ok" onclick="confirmCatAdd()">확인</button>
+        <button class="cl" onclick="cancelCatAdd()">취소</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="flabel">상세</label>
+      <input type="text" id="inp-detail" placeholder="예) 스타벅스, 점심식사">
+    </div>
+
+    <div class="field">
+      <label class="flabel">금액 (원)</label>
+      <input type="number" id="inp-amount" placeholder="0" inputmode="numeric">
+    </div>
+
+    <button class="submit-btn" onclick="addItem()">+ 지출 추가</button>
+    <button class="submit-btn secondary" onclick="addItemUnclassified()">분류 모름 — 일단 저장</button>
+  </div>
+</div>
+</div>
+
+<!-- 최근 내역 탭 -->
+<div id="tab-recent" style="display:none;">
+  <div class="recent-wrap" style="padding-top:16px;">
+    <div class="recent-title" id="recent-title"></div>
+    <div id="recent-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 기존 가계부와 동일한 localStorage 키 사용 ──
+const CREDIT_CARDS = ['국민은행 신용카드','IBK 신용카드'];
+const DEFAULT_EXP_CATS = {
+  '식비':['카페','식당','배달','편의점','디저트','술집','간식','군것질'],
+  '의료비':['병원/약국','병원','약국','영양제','성형외과'],
+  '문화생활':['놀이','책','노래방','사진'],
+  '교통비':['대중교통','기차/고속버스'],
+  '의류':['옷','속옷'],
+  '미용/화장품':['미용실','화장품','속눈썹펌','미용용품'],
+  '생필품':['쿠팡','다이소','생필품','무인양품','폰케이스'],
+  '구독':['구독','OTT'],
+  '운동':['헬스장','마라톤'],
+  '선물':['생일선물','선물'],
+  '회비':['계모임','가족여행','가족회비','회비'],
+  '자기관리':['목욕탕'],
+  '여행':['제주여행'],
+  '숙박':['파주 숙소'],
+  '공과금':['공과금'],
+  '용돈':['어버이날 용돈'],
+};
+
+let expCats = JSON.parse(localStorage.getItem('g_expcats') || 'null') || JSON.parse(JSON.stringify(DEFAULT_EXP_CATS));
+let items   = JSON.parse(localStorage.getItem('g_items')   || '[]');
+
+const curYM = new Date().toISOString().slice(0,7);
+const [cy,cm] = curYM.split('-').map(Number);
+document.getElementById('cur-month').textContent = `${cy}년 ${cm}월`;
+
+function saveItems() {
+  localStorage.setItem('g_items', JSON.stringify(items));
+  localStorage.setItem('g_expcats', JSON.stringify(expCats));
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2000);
+}
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+
+function isCredit(card) { return CREDIT_CARDS.includes(card); }
+function billingMonth(dateStr, card) {
+  if (!isCredit(card)) return dateStr.slice(0,7);
+  const [y,m] = dateStr.split('-').map(Number);
+  const d = new Date(y, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// 카드 선택
+function selCard(cardName, btn) {
+  document.querySelectorAll('.card-tab').forEach(b=>b.classList.remove('on','kakao','kb','ibk'));
+  btn.classList.add('on');
+  if (cardName==='카카오뱅크 체크카드') btn.classList.add('kakao');
+  else if (cardName==='국민은행 신용카드') btn.classList.add('kb');
+  else btn.classList.add('ibk');
+  document.getElementById('inp-card').value = cardName;
+  document.getElementById('cr-notice').classList.toggle('show', isCredit(cardName));
+}
+
+// 대분류/소분류
+function buildSelect(selId, catsObj, keepVal) {
+  const sel = document.getElementById(selId);
+  const prev = keepVal !== undefined ? keepVal : sel.value;
+  sel.innerHTML = Object.keys(catsObj).map(k=>`<option value="${k}">${k}</option>`).join('');
+  sel.innerHTML += `<option value="__add__" style="color:#999">＋ 대분류 추가</option>`;
+  if (prev && catsObj[prev]) sel.value = prev;
+}
+function buildSubSel(selId, catsObj, main) {
+  const sel = document.getElementById(selId);
+  const subs = catsObj[main] || [];
+  if (!subs.length) {
+    sel.innerHTML = `<option value="" disabled selected style="color:#bbb">소분류 없음</option>`;
+  } else {
+    sel.innerHTML = subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  sel.innerHTML += `<option value="__add__" style="color:#999">＋ 소분류 추가</option>`;
+}
+
+let _catMode=null, _catTargetMain=null;
+function onMainClick() { document.getElementById('inp-main').dataset.prev=document.getElementById('inp-main').value; }
+function onSubClick()  { document.getElementById('inp-sub').dataset.prev=document.getElementById('inp-sub').value; }
+
+function onMainChange() {
+  const sel=document.getElementById('inp-main');
+  if (sel.value==='__add__') {
+    _catMode='main'; _catTargetMain=null;
+    showCatBox('새 대분류 이름');
+    sel.value=sel.dataset.prev||Object.keys(expCats)[0]||''; return;
+  }
+  buildSubSel('inp-sub',expCats,sel.value); hideCatBox();
+}
+function onSubChange() {
+  const sub=document.getElementById('inp-sub');
+  if (sub.value==='__add__') {
+    _catMode='sub'; _catTargetMain=document.getElementById('inp-main').value;
+    showCatBox(`'${_catTargetMain}' 소분류 이름`);
+    const prev=sub.dataset.prev||'';
+    sub.value=(prev&&prev!=='__add__')?prev:(expCats[_catTargetMain]||[])[0]||''; return;
+  }
+  hideCatBox();
+}
+function showCatBox(label) {
+  const box=document.getElementById('cat-add-box');
+  document.getElementById('cat-add-label').textContent=label;
+  const inp=box.querySelector('input');
+  inp.value=''; box.style.display='block';
+  setTimeout(()=>inp.focus(),60);
+}
+function hideCatBox() { document.getElementById('cat-add-box').style.display='none'; }
+function cancelCatAdd() { hideCatBox(); _catMode=null; _catTargetMain=null; }
+function confirmCatAdd() {
+  const val=document.getElementById('cat-add-input').value.trim();
+  if (!val){toast('이름을 입력해주세요');return;}
+  if (_catMode==='main') {
+    if (expCats[val]){toast('이미 있어요');return;}
+    expCats[val]=[]; saveItems(); hideCatBox();
+    buildSelect('inp-main',expCats,val); buildSubSel('inp-sub',expCats,val);
+    toast(`'${val}' 추가됐어요`);
+  } else {
+    const main=_catTargetMain;
+    if ((expCats[main]||[]).includes(val)){toast('이미 있어요');return;}
+    if (!expCats[main]) expCats[main]=[];
+    expCats[main].push(val); saveItems(); hideCatBox();
+    buildSubSel('inp-sub',expCats,main);
+    document.getElementById('inp-sub').value=val;
+    toast(`'${val}' 추가됐어요`);
+  }
+  _catMode=null; _catTargetMain=null;
+}
+
+// 지출 추가
+function addItem() {
+  const card=document.getElementById('inp-card').value;
+  const date=document.getElementById('inp-date').value;
+  const main=document.getElementById('inp-main').value;
+  const sub=document.getElementById('inp-sub').value;
+  const detail=document.getElementById('inp-detail').value.trim();
+  const amount=parseInt(document.getElementById('inp-amount').value);
+  if (!date){toast('날짜를 선택해주세요');return;}
+  if (!amount||amount<=0){toast('금액을 입력해주세요');return;}
+  if (!sub||sub==='__add__'){toast('분류를 선택해주세요');return;}
+  const bm=billingMonth(date,card);
+  items.push({id:Date.now(),type:'변동',card,date,main,sub,detail,amount,bm,unclassified:false});
+  saveItems();
+  document.getElementById('inp-detail').value='';
+  document.getElementById('inp-amount').value='';
+  toast('추가됐어요! 💸');
+  renderRecent();
+}
+
+function addItemUnclassified() {
+  const card=document.getElementById('inp-card').value;
+  const date=document.getElementById('inp-date').value;
+  const detail=document.getElementById('inp-detail').value.trim();
+  const amount=parseInt(document.getElementById('inp-amount').value);
+  if (!date){toast('날짜를 선택해주세요');return;}
+  if (!amount||amount<=0){toast('금액을 입력해주세요');return;}
+  const bm=billingMonth(date,card);
+  items.push({id:Date.now(),type:'변동',card,date,main:'미분류',sub:'미분류',detail,amount,bm,unclassified:true});
+  saveItems();
+  document.getElementById('inp-detail').value='';
+  document.getElementById('inp-amount').value='';
+  toast('일단 저장됐어요 📝');
+  renderRecent();
+}
+
+// 최근 내역
+function renderRecent() {
+  const monthly=items.filter(i=>i.date.slice(0,7)===curYM).sort((a,b)=>b.id-a.id).slice(0,30);
+  const total=monthly.reduce((s,i)=>s+i.amount,0);
+  document.getElementById('recent-title').textContent=`이번달 변동 지출 · -${fmt(total)}원`;
+  const el=document.getElementById('recent-list');
+  if (!monthly.length){el.innerHTML='<div class="empty">이번달 입력한 내역이 없어요</div>';return;}
+  el.innerHTML=monthly.map(i=>{
+    const cc=i.card==='카카오뱅크 체크카드'?'card-kakao':i.card==='국민은행 신용카드'?'card-kb':'card-ibk';
+    const chip=isCredit(i.card)?`<span style="font-size:9px;background:#f0e8f5;color:#5a1e8a;border-radius:3px;padding:1px 4px;margin-left:3px;">${(i.bm||i.date.slice(0,7)).slice(5)}월청구</span>`:'';
+    return `<div class="item ${cc}">
+      <span class="ibadge ${i.unclassified?'unc':''}">${i.unclassified?'미분류':'변동'}</span>
+      <div class="iinfo">
+        <div class="imain">${i.detail||i.sub}${chip}</div>
+        <div class="isub">${i.date.slice(5).replace('-','/')} · ${i.main}·${i.sub}</div>
+      </div>
+      <div class="iamt">-${fmt(i.amount)}원</div>
+    </div>`;
+  }).join('');
+}
+
+// 탭 전환
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['add','recent'][i]===name));
+  document.getElementById('tab-add').style.display=name==='add'?'block':'none';
+  document.getElementById('tab-recent').style.display=name==='recent'?'block':'none';
+  if (name==='recent') renderRecent();
+}
+
+// 초기화
+document.getElementById('inp-date').value=new Date().toISOString().slice(0,10);
+buildSelect('inp-main',expCats);
+buildSubSel('inp-sub',expCats,Object.keys(expCats)[0]);
+</script>
+</body>
+</html>
