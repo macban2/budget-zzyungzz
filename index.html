@@ -2037,10 +2037,12 @@ function renderCardStats() {
 
     const months = getMonthList();
     const labels = months.map(ym=>parseInt(ym.slice(5))+'월');
-    const cardDatasets = cards.map(c => ({
+    const allPayForChart = [...cards, ...accounts.map(a=>({...a, id:a.name}))];
+    const cardDatasets = allPayForChart.map(c => ({
       label: c.name.replace(' 체크카드','').replace(' 신용카드',''),
       data: months.map(ym=>{
         const v = items.filter(i=>(i.bm||i.date.slice(0,7))===ym && i.card===c.id)
+
           .reduce((s,i)=>s+(i.amount-getSettleAmtForItem(i.id)),0);
         const f = getFixedForMonth(ym).filter(fx=>fx.card===c.id).reduce((s,fx)=>s+fx.amount,0);
         return v+f;
@@ -2770,6 +2772,7 @@ function addAccount() {
   saveAccounts();
   document.getElementById('new-account-name').value = '';
   renderAccountList();
+  rebuildAllCardTabs();
   toast('계좌가 추가됐어요!');
 }
 
@@ -2778,6 +2781,7 @@ function deleteAccount(id) {
   accounts = accounts.filter(a=>a.id!==id);
   saveAccounts();
   renderAccountList();
+  rebuildAllCardTabs();
   toast('삭제됐어요');
 }
 
@@ -2857,16 +2861,23 @@ function renderCardList() {
 function buildCardTabs(containerId, prefix, selectedCard) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const sel = selectedCard || (cards[0]?.id || '');
-  el.innerHTML = cards.map(c => {
+  // 카드 + 계좌 합쳐서 표시
+  const allPayments = [
+    ...cards.map(c=>({...c, _isAccount:false})),
+    ...accounts.map(a=>({id:a.name, name:a.name, color:a.color, textColor:a.textColor, type:a.type, _isAccount:true}))
+  ];
+  const sel = selectedCard || (allPayments[0]?.id || '');
+  el.innerHTML = allPayments.map(c => {
     const isOn = c.id === sel;
+    const label = c._isAccount
+      ? c.name.replace(' 입출금','<br>입출금').replace(' 적금','<br>적금').replace(' 투자','<br>투자')
+      : c.name.replace(' 체크카드','<br>체크카드').replace(' 신용카드','<br>신용카드');
     return `<button class="card-tab ${isOn?'on':''}"
       style="${isOn?`background:${c.color};color:${c.textColor};border-color:${c.color};`:''}"
       onclick="selectCardDynamic('${prefix}','${c.id}','${c.color}','${c.textColor}',this)">
-      ${c.name.replace(' 체크카드','<br>체크카드').replace(' 신용카드','<br>신용카드')}
+      ${label}
     </button>`;
   }).join('');
-  // hidden input 설정
   const hidden = document.getElementById(prefix+'-card');
   if (hidden) hidden.value = sel;
 }
@@ -2888,13 +2899,13 @@ function selectCardDynamic(prefix, cardId, color, textColor, btn) {
 }
 
 function rebuildAllCardTabs() {
-  // 현재 선택된 카드 값 유지하면서 재렌더링
+  const allPayments = [...cards, ...accounts.map(a=>({...a, id:a.name}))];
   ['inp','fi','ei','memo'].forEach(prefix => {
     const hidden = document.getElementById(prefix+'-card');
     const cur = hidden?.value;
     const containerId = prefix+'-card-tabs';
-    const valid = cur && cards.find(c=>c.id===cur);
-    buildCardTabs(containerId, prefix, valid ? cur : cards[0]?.id);
+    const valid = cur && allPayments.find(c=>c.id===cur);
+    buildCardTabs(containerId, prefix, valid ? cur : allPayments[0]?.id);
   });
   renderAddCardFilter();
 }
@@ -2902,10 +2913,11 @@ function rebuildAllCardTabs() {
 function renderAddCardFilter() {
   const row = document.getElementById('add-card-filter-row');
   if (!row) return;
-  const allCards = ['전체', ...cards.map(c=>c.id)];
+  const allPayments = [...cards, ...accounts.map(a=>({...a, id:a.name}))];
+  const allCards = ['전체', ...allPayments.map(c=>c.id)];
   row.innerHTML = allCards.map(c => {
     const isOn = c === addCardFilter;
-    const card = cards.find(x=>x.id===c);
+    const card = allPayments.find(x=>x.id===c);
     const bg = isOn ? (card ? card.color : 'var(--accent)') : 'var(--surface)';
     const tc = isOn ? (card ? card.textColor : 'white') : 'var(--text2)';
     const border = isOn ? (card ? card.color : 'var(--accent)') : 'var(--border2)';
