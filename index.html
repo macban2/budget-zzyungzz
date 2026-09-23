@@ -255,6 +255,7 @@ input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
     <button class="ntab" onclick="go('invest')">투자</button>
     <button class="ntab" onclick="go('asset')">자산</button>
     <button class="ntab" onclick="go('dash')">통계</button>
+    <button class="ntab" onclick="go('cards')">카드 관리</button>
     <button class="ntab" onclick="go('cats')">분류 관리</button>
   </div>
 </div>
@@ -561,6 +562,47 @@ input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
   </div>
 </div>
 
+<!-- 카드 관리 -->
+<div id="page-cards" class="page">
+  <div style="display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start;">
+  <div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px;">등록된 카드</div>
+    <div id="card-list"></div>
+  </div>
+  <div class="card">
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;">새 카드 추가</div>
+    <div class="field">
+      <div class="flabel">카드 이름</div>
+      <input type="text" id="new-card-name" placeholder="예) 신한 체크카드, 현대 신용카드">
+    </div>
+    <div class="field">
+      <div class="flabel">종류</div>
+      <div style="display:flex;gap:8px;">
+        <button class="card-tab on" id="new-card-type-check" onclick="selectNewCardType('체크카드',this)" style="flex:1;">체크카드</button>
+        <button class="card-tab" id="new-card-type-credit" onclick="selectNewCardType('신용카드',this)" style="flex:1;">신용카드</button>
+      </div>
+      <input type="hidden" id="new-card-type" value="체크카드">
+    </div>
+    <div class="field">
+      <div class="flabel">카드 색상</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
+        <button onclick="selectCardColor('#FEE500','#3A1D1D',this)" style="width:36px;height:36px;border-radius:50%;background:#FEE500;border:2px solid transparent;cursor:pointer;" title="노란색"></button>
+        <button onclick="selectCardColor('#F06400','white',this)" style="width:36px;height:36px;border-radius:50%;background:#F06400;border:2px solid transparent;cursor:pointer;" title="주황색"></button>
+        <button onclick="selectCardColor('#00AEEF','white',this)" style="width:36px;height:36px;border-radius:50%;background:#00AEEF;border:2px solid transparent;cursor:pointer;" title="하늘색"></button>
+        <button onclick="selectCardColor('#5dcaa5','white',this)" style="width:36px;height:36px;border-radius:50%;background:#5dcaa5;border:2px solid transparent;cursor:pointer;" title="초록색"></button>
+        <button onclick="selectCardColor('#534ab7','white',this)" style="width:36px;height:36px;border-radius:50%;background:#534ab7;border:2px solid transparent;cursor:pointer;" title="보라색"></button>
+        <button onclick="selectCardColor('#c94040','white',this)" style="width:36px;height:36px;border-radius:50%;background:#c94040;border:2px solid transparent;cursor:pointer;" title="빨간색"></button>
+        <button onclick="selectCardColor('#1a1a18','white',this)" style="width:36px;height:36px;border-radius:50%;background:#1a1a18;border:2px solid transparent;cursor:pointer;" title="검정색"></button>
+        <button onclick="selectCardColor('#9e9e96','white',this)" style="width:36px;height:36px;border-radius:50%;background:#9e9e96;border:2px solid transparent;cursor:pointer;" title="회색"></button>
+      </div>
+      <input type="hidden" id="new-card-color" value="#1a1a18">
+      <input type="hidden" id="new-card-text-color" value="white">
+    </div>
+    <button class="submit-btn" onclick="addCard()">+ 카드 추가</button>
+  </div>
+  </div>
+</div>
+
 <!-- 분류 관리 -->
 <div id="page-cats" class="page">
   <div class="sec-title">지출 분류</div>
@@ -757,7 +799,7 @@ input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
 </div><!-- /layout -->
 
 <script>
-const CREDIT_CARDS = ['국민은행 신용카드','IBK 신용카드'];
+// CREDIT_CARDS는 동적으로 getCreditCards()로 대체됨
 
 const DEFAULT_EXP_CATS = {
   '식비':['카페','식당','배달','편의점','디저트','술집','간식','군것질'],
@@ -795,6 +837,17 @@ let saves    = JSON.parse(localStorage.getItem('g_saves')    || '[]');   // 저�
 let curYM = new Date().toISOString().slice(0,7);
 
 
+
+
+// ── 카드 데이터 ──────────────────────────────
+const DEFAULT_CARDS = [
+  {id:'카카오뱅크 체크카드', name:'카카오뱅크 체크카드', type:'체크카드', color:'#FEE500', textColor:'#3A1D1D'},
+  {id:'국민은행 신용카드',   name:'국민은행 신용카드',   type:'신용카드', color:'#F06400', textColor:'white'},
+  {id:'IBK 신용카드',        name:'IBK 신용카드',        type:'신용카드', color:'#00AEEF', textColor:'white'},
+];
+let cards = JSON.parse(localStorage.getItem('g_cards') || 'null') || JSON.parse(JSON.stringify(DEFAULT_CARDS));
+function saveCards() { localStorage.setItem('g_cards', JSON.stringify(cards)); }
+function getCreditCards() { return cards.filter(c=>c.type==='신용카드').map(c=>c.id); }
 
 // ── 기본 유틸 ──────────────────────────────
 function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
@@ -850,7 +903,7 @@ document.getElementById('next-m').onclick = () => {
 
 // ── 신용카드 ──────────────────────────────
 // CREDIT_CARDS already declared above
-function isCredit(card) { return CREDIT_CARDS.includes(card); }
+function isCredit(card) { return getCreditCards().includes(card); }
 function billingMonth(dateStr, card) {
   if (!isCredit(card)) return dateStr.slice(0,7);
   const [y,m] = dateStr.split('-').map(Number);
@@ -1389,23 +1442,7 @@ function renderAddList() {
   const fixMonthly = getFixedForMonth(curYM);
 
   // 카드 필터 탭
-  const cardTabs = ['전체', ...CARDS];
-  const cardColors = {
-    '카카오뱅크 체크카드': { bg:'#FEE500', border:'#e6cf00', text:'#3A1D1D' },
-    '국민은행 신용카드':   { bg:'#F06400', border:'#d45700', text:'white' },
-    'IBK 신용카드':        { bg:'#00AEEF', border:'#0099d4', text:'white' },
-  };
-  document.getElementById('add-card-filter-row').innerHTML = cardTabs.map(c => {
-    const short = c.replace(' 체크카드','').replace(' 신용카드','');
-    const isOn = c === addCardFilter;
-    const col = cardColors[c];
-    const onStyle = isOn
-      ? (col ? `background:${col.bg};color:${col.text};border-color:${col.border};` : 'background:var(--accent);color:white;border-color:var(--accent);')
-      : '';
-    return `<button onclick="setAddCardFilter('${c}')"
-      style="padding:6px 14px;border-radius:20px;border:0.5px solid var(--border2);background:var(--surface);font-size:12px;font-weight:600;color:${isOn?(col?col.text:'white'):'var(--text2)'};cursor:pointer;white-space:nowrap;${onStyle}"
-    >${short}</button>`;
-  }).join('');
+  renderAddCardFilter();
 
   // 대분류 필터
   const allMains = ['전체',...Object.keys(expCats)];
@@ -2508,9 +2545,129 @@ function toggleSettle(itemId,e){
   if(panel)panel.classList.toggle('open');
 }
 
+
+// ── 카드 관리 ──────────────────────────────
+function selectNewCardType(type, btn) {
+  document.querySelectorAll('#new-card-type-check, #new-card-type-credit').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('new-card-type').value = type;
+}
+
+function selectCardColor(color, textColor, btn) {
+  document.querySelectorAll('#color-picker button').forEach(b=>b.style.border='2px solid transparent');
+  btn.style.border = '2px solid #1a1a18';
+  document.getElementById('new-card-color').value = color;
+  document.getElementById('new-card-text-color').value = textColor;
+}
+
+function addCard() {
+  const name = document.getElementById('new-card-name').value.trim();
+  const type = document.getElementById('new-card-type').value;
+  const color = document.getElementById('new-card-color').value;
+  const textColor = document.getElementById('new-card-text-color').value;
+  if (!name) { toast('카드 이름을 입력해주세요'); return; }
+  if (cards.find(c=>c.name===name)) { toast('이미 등록된 카드예요'); return; }
+  cards.push({id:name, name, type, color, textColor});
+  saveCards();
+  document.getElementById('new-card-name').value = '';
+  renderCardList();
+  rebuildAllCardTabs();
+  toast('카드가 추가됐어요!');
+}
+
+function deleteCard(id) {
+  const inUse = items.some(i=>i.card===id) || fixeds.some(f=>f.card===id);
+  if (inUse && !confirm('이 카드로 등록된 지출 내역이 있어요. 그래도 삭제할까요?')) return;
+  if (!confirm('카드를 삭제할까요?')) return;
+  cards = cards.filter(c=>c.id!==id);
+  saveCards();
+  renderCardList();
+  rebuildAllCardTabs();
+  toast('삭제됐어요');
+}
+
+function renderCardList() {
+  const el = document.getElementById('card-list');
+  if (!el) return;
+  if (!cards.length) { el.innerHTML='<div class="empty">등록된 카드가 없어요</div>'; return; }
+  el.innerHTML = cards.map(c => `
+    <div class="fixed-card"><div class="fixed-item">
+      <div style="width:14px;height:14px;border-radius:50%;background:${c.color};flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>
+      <div class="fixed-info" style="min-width:0;flex:1;">
+        <div class="fixed-name">${c.name}</div>
+        <div class="fixed-meta">${c.type}</div>
+      </div>
+      <button class="xbtn" onclick="deleteCard('${c.id}')">✕</button>
+    </div></div>
+  `).join('');
+}
+
+// 모든 카드탭 동적 렌더링
+function buildCardTabs(containerId, prefix, selectedCard) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const sel = selectedCard || (cards[0]?.id || '');
+  el.innerHTML = cards.map(c => {
+    const isOn = c.id === sel;
+    return `<button class="card-tab ${isOn?'on':''}"
+      style="${isOn?`background:${c.color};color:${c.textColor};border-color:${c.color};`:''}"
+      onclick="selectCardDynamic('${prefix}','${c.id}','${c.color}','${c.textColor}',this)">
+      ${c.name.replace(' 체크카드','<br>체크카드').replace(' 신용카드','<br>신용카드')}
+    </button>`;
+  }).join('');
+  // hidden input 설정
+  const hidden = document.getElementById(prefix+'-card');
+  if (hidden) hidden.value = sel;
+}
+
+function selectCardDynamic(prefix, cardId, color, textColor, btn) {
+  btn.closest('.card-tabs').querySelectorAll('.card-tab').forEach(b=>{
+    b.classList.remove('on');
+    b.style.background=''; b.style.color=''; b.style.borderColor='';
+  });
+  btn.classList.add('on');
+  btn.style.background = color;
+  btn.style.color = textColor;
+  btn.style.borderColor = color;
+  const hidden = document.getElementById(prefix+'-card');
+  if (hidden) hidden.value = cardId;
+  if (prefix==='inp') {
+    document.getElementById('cr-notice').classList.toggle('show', isCredit(cardId));
+  }
+}
+
+function rebuildAllCardTabs() {
+  // 현재 선택된 카드 값 유지하면서 재렌더링
+  ['inp','fi','ei','memo'].forEach(prefix => {
+    const hidden = document.getElementById(prefix+'-card');
+    const cur = hidden?.value;
+    const containerId = prefix+'-card-tabs';
+    const valid = cur && cards.find(c=>c.id===cur);
+    buildCardTabs(containerId, prefix, valid ? cur : cards[0]?.id);
+  });
+  renderAddCardFilter();
+}
+
+function renderAddCardFilter() {
+  const row = document.getElementById('add-card-filter-row');
+  if (!row) return;
+  const allCards = ['전체', ...cards.map(c=>c.id)];
+  row.innerHTML = allCards.map(c => {
+    const isOn = c === addCardFilter;
+    const card = cards.find(x=>x.id===c);
+    const bg = isOn ? (card ? card.color : 'var(--accent)') : 'var(--surface)';
+    const tc = isOn ? (card ? card.textColor : 'white') : 'var(--text2)';
+    const border = isOn ? (card ? card.color : 'var(--accent)') : 'var(--border2)';
+    const label = c==='전체' ? '전체' : c.replace(' 체크카드','').replace(' 신용카드','');
+    return `<button onclick="setAddCardFilter('${c}')"
+      style="padding:6px 14px;border-radius:20px;border:0.5px solid ${border};background:${bg};color:${tc};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"
+    >${label}</button>`;
+  }).join('');
+}
+
 // ── 탭 전환 ──
 function go(name) {
-  const names=['fixed','add','income','saving','invest','asset','dash','cats'];
+  const names=['fixed','add','income','saving','invest','asset','dash','cards','cats'];
   document.querySelectorAll('.ntab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -2527,6 +2684,13 @@ function go(name) {
 // ── 초기화 ──
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('inp-date').value  = today;
+
+// 카드탭 동적 초기화
+buildCardTabs('inp-card-tabs', 'inp');
+buildCardTabs('fi-card-tabs', 'fi');
+buildCardTabs('ei-card-tabs', 'ei');
+buildCardTabs('memo-card-tabs', 'memo');
+
 document.getElementById('inc-date').value  = today;
 document.getElementById('fi-start').value  = curYM;
 document.getElementById('sv-saving-start').value = curYM;
