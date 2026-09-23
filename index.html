@@ -255,7 +255,7 @@ input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
     <button class="ntab" onclick="go('invest')">투자</button>
     <button class="ntab" onclick="go('asset')">자산</button>
     <button class="ntab" onclick="go('dash')">통계</button>
-    <button class="ntab" onclick="go('cards')">카드 관리</button>
+    <button class="ntab" onclick="go('cards')">계좌/카드 관리</button>
     <button class="ntab" onclick="go('cats')">분류 관리</button>
   </div>
 </div>
@@ -560,45 +560,120 @@ input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
 
     </div>
   </div>
+
+  <!-- 카드별 통계 섹션 -->
+  <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+
+    <!-- 이번달 카드별 합계 -->
+    <div style="background:var(--surface);border-radius:var(--r);border:0.5px solid var(--border);padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;">이번달 카드별 지출</div>
+      <div id="dash-card-summary"></div>
+    </div>
+
+    <!-- 신용카드 청구 예정 -->
+    <div style="background:var(--surface);border-radius:var(--r);border:0.5px solid var(--border);padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;">다음달 신용카드 청구 예정</div>
+      <div id="dash-credit-billing"></div>
+    </div>
+
+    <!-- 월별 카드별 추이 -->
+    <div style="background:var(--surface);border-radius:var(--r);border:0.5px solid var(--border);padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">월별 카드별 지출 추이</div>
+      <div style="position:relative;height:180px;">
+        <canvas id="chart-card-trend"></canvas>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-<!-- 카드 관리 -->
+<!-- 계좌/카드 관리 -->
 <div id="page-cards" class="page">
-  <div style="display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start;">
+  <div style="display:grid;grid-template-columns:1fr 460px;gap:28px;align-items:start;">
+
+  <!-- 왼쪽: 목록 -->
   <div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:14px;">등록된 카드</div>
-    <div id="card-list"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px;">카드</div>
+    <div id="card-list" style="margin-bottom:20px;"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px;">계좌</div>
+    <div id="account-list"></div>
   </div>
+
+  <!-- 오른쪽: 등록 폼 -->
   <div class="card">
-    <div style="font-size:15px;font-weight:700;margin-bottom:16px;">새 카드 추가</div>
-    <div class="field">
-      <div class="flabel">카드 이름</div>
-      <input type="text" id="new-card-name" placeholder="예) 신한 체크카드, 현대 신용카드">
+    <!-- 카드/계좌 전환 탭 -->
+    <div style="display:flex;gap:6px;margin-bottom:18px;">
+      <button class="card-tab on" id="form-type-card" onclick="switchCardAccountForm('card',this)" style="flex:1;">카드</button>
+      <button class="card-tab" id="form-type-account" onclick="switchCardAccountForm('account',this)" style="flex:1;">계좌</button>
     </div>
-    <div class="field">
-      <div class="flabel">종류</div>
-      <div style="display:flex;gap:8px;">
-        <button class="card-tab on" id="new-card-type-check" onclick="selectNewCardType('체크카드',this)" style="flex:1;">체크카드</button>
-        <button class="card-tab" id="new-card-type-credit" onclick="selectNewCardType('신용카드',this)" style="flex:1;">신용카드</button>
+
+    <!-- 카드 등록 폼 -->
+    <div id="form-card-section">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px;">새 카드 추가</div>
+      <div class="field">
+        <div class="flabel">카드 이름</div>
+        <input type="text" id="new-card-name" placeholder="예) 신한 체크카드, 현대 신용카드">
       </div>
-      <input type="hidden" id="new-card-type" value="체크카드">
-    </div>
-    <div class="field">
-      <div class="flabel">카드 색상</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
-        <button onclick="selectCardColor('#FEE500','#3A1D1D',this)" style="width:36px;height:36px;border-radius:50%;background:#FEE500;border:2px solid transparent;cursor:pointer;" title="노란색"></button>
-        <button onclick="selectCardColor('#F06400','white',this)" style="width:36px;height:36px;border-radius:50%;background:#F06400;border:2px solid transparent;cursor:pointer;" title="주황색"></button>
-        <button onclick="selectCardColor('#00AEEF','white',this)" style="width:36px;height:36px;border-radius:50%;background:#00AEEF;border:2px solid transparent;cursor:pointer;" title="하늘색"></button>
-        <button onclick="selectCardColor('#5dcaa5','white',this)" style="width:36px;height:36px;border-radius:50%;background:#5dcaa5;border:2px solid transparent;cursor:pointer;" title="초록색"></button>
-        <button onclick="selectCardColor('#534ab7','white',this)" style="width:36px;height:36px;border-radius:50%;background:#534ab7;border:2px solid transparent;cursor:pointer;" title="보라색"></button>
-        <button onclick="selectCardColor('#c94040','white',this)" style="width:36px;height:36px;border-radius:50%;background:#c94040;border:2px solid transparent;cursor:pointer;" title="빨간색"></button>
-        <button onclick="selectCardColor('#1a1a18','white',this)" style="width:36px;height:36px;border-radius:50%;background:#1a1a18;border:2px solid transparent;cursor:pointer;" title="검정색"></button>
-        <button onclick="selectCardColor('#9e9e96','white',this)" style="width:36px;height:36px;border-radius:50%;background:#9e9e96;border:2px solid transparent;cursor:pointer;" title="회색"></button>
+      <div class="field">
+        <div class="flabel">종류</div>
+        <div style="display:flex;gap:8px;">
+          <button class="card-tab on" id="new-card-type-check" onclick="selectNewCardType('체크카드',this)" style="flex:1;">체크카드</button>
+          <button class="card-tab" id="new-card-type-credit" onclick="selectNewCardType('신용카드',this)" style="flex:1;">신용카드</button>
+        </div>
+        <input type="hidden" id="new-card-type" value="체크카드">
       </div>
-      <input type="hidden" id="new-card-color" value="#1a1a18">
-      <input type="hidden" id="new-card-text-color" value="white">
+      <div class="field">
+        <div class="flabel">색상</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
+          <button onclick="selectCardColor('#FEE500','#3A1D1D',this)" style="width:34px;height:34px;border-radius:50%;background:#FEE500;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#F06400','white',this)" style="width:34px;height:34px;border-radius:50%;background:#F06400;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#00AEEF','white',this)" style="width:34px;height:34px;border-radius:50%;background:#00AEEF;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#5dcaa5','white',this)" style="width:34px;height:34px;border-radius:50%;background:#5dcaa5;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#534ab7','white',this)" style="width:34px;height:34px;border-radius:50%;background:#534ab7;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#c94040','white',this)" style="width:34px;height:34px;border-radius:50%;background:#c94040;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#1a1a18','white',this)" style="width:34px;height:34px;border-radius:50%;background:#1a1a18;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectCardColor('#9e9e96','white',this)" style="width:34px;height:34px;border-radius:50%;background:#9e9e96;border:2px solid transparent;cursor:pointer;"></button>
+        </div>
+        <input type="hidden" id="new-card-color" value="#1a1a18">
+        <input type="hidden" id="new-card-text-color" value="white">
+      </div>
+      <button class="submit-btn" onclick="addCard()">+ 카드 추가</button>
     </div>
-    <button class="submit-btn" onclick="addCard()">+ 카드 추가</button>
+
+    <!-- 계좌 등록 폼 -->
+    <div id="form-account-section" style="display:none;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px;">새 계좌 추가</div>
+      <div class="field">
+        <div class="flabel">계좌 이름</div>
+        <input type="text" id="new-account-name" placeholder="예) 카카오뱅크 입출금, 토스 세이프박스">
+      </div>
+      <div class="field">
+        <div class="flabel">종류</div>
+        <div style="display:flex;gap:8px;">
+          <button class="card-tab on" id="new-account-type-check" onclick="selectNewAccountType('입출금',this)" style="flex:1;">입출금</button>
+          <button class="card-tab" id="new-account-type-saving" onclick="selectNewAccountType('적금',this)" style="flex:1;">적금</button>
+          <button class="card-tab" id="new-account-type-invest" onclick="selectNewAccountType('투자',this)" style="flex:1;">투자</button>
+        </div>
+        <input type="hidden" id="new-account-type" value="입출금">
+      </div>
+      <div class="field">
+        <div class="flabel">색상</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="account-color-picker">
+          <button onclick="selectAccountColor('#FEE500','#3A1D1D',this)" style="width:34px;height:34px;border-radius:50%;background:#FEE500;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#F06400','white',this)" style="width:34px;height:34px;border-radius:50%;background:#F06400;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#00AEEF','white',this)" style="width:34px;height:34px;border-radius:50%;background:#00AEEF;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#5dcaa5','white',this)" style="width:34px;height:34px;border-radius:50%;background:#5dcaa5;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#534ab7','white',this)" style="width:34px;height:34px;border-radius:50%;background:#534ab7;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#c94040','white',this)" style="width:34px;height:34px;border-radius:50%;background:#c94040;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#1a1a18','white',this)" style="width:34px;height:34px;border-radius:50%;background:#1a1a18;border:2px solid transparent;cursor:pointer;"></button>
+          <button onclick="selectAccountColor('#9e9e96','white',this)" style="width:34px;height:34px;border-radius:50%;background:#9e9e96;border:2px solid transparent;cursor:pointer;"></button>
+        </div>
+        <input type="hidden" id="new-account-color" value="#534ab7">
+        <input type="hidden" id="new-account-text-color" value="white">
+      </div>
+      <button class="submit-btn" onclick="addAccount()" style="background:#534ab7;">+ 계좌 추가</button>
+    </div>
+
   </div>
   </div>
 </div>
@@ -1445,7 +1520,7 @@ function renderAddList() {
   renderAddCardFilter();
 
   // 대분류 필터
-  const allMains = ['전체',...Object.keys(expCats)];
+  const allMains = ['전체','⚠️ 미분류',...Object.keys(expCats)];
   document.getElementById('add-filter-row').innerHTML=allMains.map(m=>
     `<button class="fbtn ${m===addListFilter?'on':''}" onclick="setAddFilter('${m}')">${m}</button>`
   ).join('');
@@ -1453,7 +1528,7 @@ function renderAddList() {
   // 카드 + 대분류 필터 적용
   let expFiltered = addCardFilter==='전체' ? expMonthly : expMonthly.filter(i=>i.card===addCardFilter);
   let fixFiltered = addCardFilter==='전체' ? fixMonthly : fixMonthly.filter(f=>f.card===addCardFilter);
-  const expF = addListFilter==='전체' ? expFiltered : expFiltered.filter(i=>i.main===addListFilter);
+  const expF = addListFilter==='전체' ? expFiltered : addListFilter==='⚠️ 미분류' ? expFiltered.filter(i=>i.unclassified) : expFiltered.filter(i=>i.main===addListFilter);
   const fixF = addListFilter==='전체' ? fixFiltered : fixFiltered.filter(f=>f.main===addListFilter);
   if (!expF.length&&!fixF.length) {
     document.getElementById('add-item-list').innerHTML='<div class="empty">이번 달 지출 내역이 없어요</div>'; return;
@@ -1540,7 +1615,7 @@ function renderAddList() {
   if (totalEl) {
     const parts = [];
     if (addCardFilter!=='전체') parts.push(addCardFilter.replace(' 체크카드','').replace(' 신용카드',''));
-    if (addListFilter!=='전체') parts.push(addListFilter);
+    if (addListFilter!=='전체') parts.push(addListFilter==='⚠️ 미분류'?'미분류':addListFilter);
     const desc = parts.length ? parts.join(' · ')+' 합계' : '이번달 합계';
     totalEl.textContent = `${desc}: -${fmt(filteredTotal)}원`;
     totalEl.style.display = 'block';
@@ -1880,6 +1955,118 @@ function closeDashCatDetail() {
   if (sel)   sel.textContent = '';
   const emptyEl2 = document.getElementById('dash-cat-empty');
   if (emptyEl2) emptyEl2.style.display = 'block';
+}
+
+
+function renderCardStats() {
+  const [y,m] = curYM.split('-').map(Number);
+  const nextYM = m===12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`;
+
+  // ── 이번달 카드별 합계 ──
+  const summaryEl = document.getElementById('dash-card-summary');
+  if (summaryEl) {
+    // 변동 지출 (billingMonth 기준)
+    const cardTotals = {};
+    items.filter(i=>(i.bm||i.date.slice(0,7))===curYM).forEach(i=>{
+      cardTotals[i.card] = (cardTotals[i.card]||0) + (i.amount - getSettleAmtForItem(i.id));
+    });
+    // 고정 지출
+    getFixedForMonth(curYM).forEach(f=>{
+      cardTotals[f.card] = (cardTotals[f.card]||0) + f.amount;
+    });
+    const total = Object.values(cardTotals).reduce((s,v)=>s+v,0)||1;
+    const sorted = Object.entries(cardTotals).sort((a,b)=>b[1]-a[1]);
+    summaryEl.innerHTML = sorted.length ? sorted.map(([cardId, amt])=>{
+      const card = cards.find(c=>c.id===cardId);
+      const color = card?.color || '#9e9e96';
+      const pct = Math.round(amt/total*100);
+      return `<div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+            <span style="font-size:12px;font-weight:500;">${cardId.replace(' 체크카드','').replace(' 신용카드','')}</span>
+            <span style="font-size:10px;color:var(--text3);">${card?.type||''}</span>
+          </div>
+          <span style="font-size:12px;font-weight:700;">-${fmt(amt)}원 <span style="font-size:10px;color:var(--text3);font-weight:400;">(${pct}%)</span></span>
+        </div>
+        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;"></div>
+        </div>
+      </div>`;
+    }).join('') : '<div style="color:var(--text3);font-size:12px;">내역이 없어요</div>';
+  }
+
+  // ── 다음달 신용카드 청구 예정 ──
+  const billingEl = document.getElementById('dash-credit-billing');
+  if (billingEl) {
+    const creditCards = getCreditCards();
+    // 이번달에 사용한 신용카드 지출 → 다음달 청구
+    const billingMap = {};
+    items.filter(i=>i.date.slice(0,7)===curYM && creditCards.includes(i.card)).forEach(i=>{
+      billingMap[i.card] = (billingMap[i.card]||0) + i.amount;
+    });
+    // 다음달 고정 지출 중 신용카드
+    getFixedForMonth(nextYM).filter(f=>creditCards.includes(f.card)).forEach(f=>{
+      billingMap[f.card] = (billingMap[f.card]||0) + f.amount;
+    });
+    const billingTotal = Object.values(billingMap).reduce((s,v)=>s+v,0);
+    const billingEntries = Object.entries(billingMap).sort((a,b)=>b[1]-a[1]);
+
+    billingEl.innerHTML = billingEntries.length ? `
+      <div style="font-size:20px;font-weight:800;color:var(--expense);margin-bottom:12px;">-${fmt(billingTotal)}원</div>
+      ${billingEntries.map(([cardId, amt])=>{
+        const card = cards.find(c=>c.id===cardId);
+        const color = card?.color || '#9e9e96';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:0.5px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${color};"></div>
+            <span>${cardId.replace(' 신용카드','')}</span>
+          </div>
+          <span style="font-weight:600;">-${fmt(amt)}원</span>
+        </div>`;
+      }).join('')}
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;">이번달 사용분 + 다음달 고정지출 합산</div>
+    ` : '<div style="color:var(--text3);font-size:12px;">신용카드 청구 내역이 없어요</div>';
+  }
+
+  // ── 월별 카드별 추이 차트 ──
+  const trendCtx = document.getElementById('chart-card-trend');
+  if (trendCtx) {
+    if (_charts['card-trend']) { _charts['card-trend'].destroy(); delete _charts['card-trend']; }
+    trendCtx.removeAttribute('style'); trendCtx.removeAttribute('width'); trendCtx.removeAttribute('height');
+
+    const months = getMonthList();
+    const labels = months.map(ym=>parseInt(ym.slice(5))+'월');
+    const cardDatasets = cards.map(c => ({
+      label: c.name.replace(' 체크카드','').replace(' 신용카드',''),
+      data: months.map(ym=>{
+        const v = items.filter(i=>(i.bm||i.date.slice(0,7))===ym && i.card===c.id)
+          .reduce((s,i)=>s+(i.amount-getSettleAmtForItem(i.id)),0);
+        const f = getFixedForMonth(ym).filter(fx=>fx.card===c.id).reduce((s,fx)=>s+fx.amount,0);
+        return v+f;
+      }),
+      backgroundColor: c.color+'cc',
+      borderColor: c.color,
+      borderWidth: 1.5,
+      borderRadius: 3,
+    }));
+
+    _charts['card-trend'] = new Chart(trendCtx.getContext('2d'), {
+      type:'bar',
+      data:{labels, datasets:cardDatasets},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'bottom', labels:{font:{size:10}, boxWidth:10, padding:6}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: -${ctx.parsed.y.toLocaleString('ko-KR')}원`}}
+        },
+        scales:{
+          x:{stacked:true, grid:{display:false}, ticks:{font:{size:10}}},
+          y:{stacked:true, ticks:{font:{size:9}, callback:v=>v>=10000?(v/10000).toFixed(0)+'만':v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}}
+        }
+      }
+    });
+  }
 }
 
 function showMonthlyDetail(ym, type) {
@@ -2546,6 +2733,70 @@ function toggleSettle(itemId,e){
 }
 
 
+
+// ── 계좌 관리 ──────────────────────────────
+const DEFAULT_ACCOUNTS = [];
+let accounts = JSON.parse(localStorage.getItem('g_accounts') || 'null') || JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+function saveAccounts() { localStorage.setItem('g_accounts', JSON.stringify(accounts)); }
+
+function switchCardAccountForm(type, btn) {
+  document.querySelectorAll('#form-type-card, #form-type-account').forEach(b=>{ b.classList.remove('on'); b.style.background=''; b.style.color=''; b.style.borderColor=''; });
+  btn.classList.add('on');
+  document.getElementById('form-card-section').style.display    = type==='card'    ? 'block' : 'none';
+  document.getElementById('form-account-section').style.display = type==='account' ? 'block' : 'none';
+}
+
+function selectNewAccountType(type, btn) {
+  document.querySelectorAll('#new-account-type-check, #new-account-type-saving, #new-account-type-invest').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('new-account-type').value = type;
+}
+
+function selectAccountColor(color, textColor, btn) {
+  document.querySelectorAll('#account-color-picker button').forEach(b=>b.style.border='2px solid transparent');
+  btn.style.border = '2px solid #1a1a18';
+  document.getElementById('new-account-color').value = color;
+  document.getElementById('new-account-text-color').value = textColor;
+}
+
+function addAccount() {
+  const name = document.getElementById('new-account-name').value.trim();
+  const type = document.getElementById('new-account-type').value;
+  const color = document.getElementById('new-account-color').value;
+  const textColor = document.getElementById('new-account-text-color').value;
+  if (!name) { toast('계좌 이름을 입력해주세요'); return; }
+  if (accounts.find(a=>a.name===name)) { toast('이미 등록된 계좌예요'); return; }
+  accounts.push({id:Date.now(), name, type, color, textColor});
+  saveAccounts();
+  document.getElementById('new-account-name').value = '';
+  renderAccountList();
+  toast('계좌가 추가됐어요!');
+}
+
+function deleteAccount(id) {
+  if (!confirm('계좌를 삭제할까요?')) return;
+  accounts = accounts.filter(a=>a.id!==id);
+  saveAccounts();
+  renderAccountList();
+  toast('삭제됐어요');
+}
+
+function renderAccountList() {
+  const el = document.getElementById('account-list');
+  if (!el) return;
+  if (!accounts.length) { el.innerHTML='<div class="empty">등록된 계좌가 없어요</div>'; return; }
+  el.innerHTML = accounts.map(a => `
+    <div class="fixed-card"><div class="fixed-item">
+      <div style="width:14px;height:14px;border-radius:50%;background:${a.color};flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);"></div>
+      <div class="fixed-info" style="min-width:0;flex:1;">
+        <div class="fixed-name">${a.name}</div>
+        <div class="fixed-meta">${a.type}</div>
+      </div>
+      <button class="xbtn" onclick="deleteAccount(${a.id})">✕</button>
+    </div></div>
+  `).join('');
+}
+
 // ── 카드 관리 ──────────────────────────────
 function selectNewCardType(type, btn) {
   document.querySelectorAll('#new-card-type-check, #new-card-type-credit').forEach(b=>b.classList.remove('on'));
@@ -2570,7 +2821,7 @@ function addCard() {
   cards.push({id:name, name, type, color, textColor});
   saveCards();
   document.getElementById('new-card-name').value = '';
-  renderCardList();
+  renderCardList(); renderAccountList();
   rebuildAllCardTabs();
   toast('카드가 추가됐어요!');
 }
