@@ -112,7 +112,7 @@ async function sbGet(table) {
 }
 
 async function sbSet(table, data) {
-  await fetch(`${SB_URL}/rest/v1/${table}`, {
+  await fetch(`${SB_URL}/rest/v1/${table}?updated_at=not.is.null`, {
     method: 'DELETE',
     headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }
   });

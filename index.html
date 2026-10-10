@@ -938,8 +938,8 @@ async function sbGet(table) {
 }
 
 async function sbSet(table, data) {
-  // 먼저 삭제 후 삽입 (upsert 대신)
-  await fetch(`${SB_URL}/rest/v1/${table}`, {
+  // 조건부 DELETE (updated_at이 존재하는 행만)
+  await fetch(`${SB_URL}/rest/v1/${table}?updated_at=not.is.null`, {
     method: 'DELETE',
     headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }
   });
