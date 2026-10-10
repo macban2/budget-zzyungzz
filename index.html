@@ -921,20 +921,73 @@ const DEFAULT_CARDS = [
   {id:'IBK 신용카드',        name:'IBK 신용카드',        type:'신용카드', color:'#00AEEF', textColor:'white'},
 ];
 let cards = JSON.parse(localStorage.getItem('g_cards') || 'null') || JSON.parse(JSON.stringify(DEFAULT_CARDS));
-function saveCards() { localStorage.setItem('g_cards', JSON.stringify(cards)); }
+
 function getCreditCards() { return cards.filter(c=>c.type==='신용카드').map(c=>c.id); }
+
+
+// ── Supabase 설정 ──────────────────────────
+const SB_URL = 'https://dbkjaahztfbydsggaeph.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRia2phYWh6dGZieWRzZ2dhZXBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MTA1MTksImV4cCI6MjEwNzE4NjUxOX0.HbmWAG3j77aWTOZw1XyKv7tXx9-CgWcmBPcII5B0hl0';
+
+async function sbGet(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=data&limit=1&order=updated_at.desc`, {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  });
+  const rows = await r.json();
+  return rows.length ? rows[0].data : null;
+}
+
+async function sbSet(table, data) {
+  // 먼저 삭제 후 삽입 (upsert 대신)
+  await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }
+  });
+  await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ data })
+  });
+}
+
+async function saveAll() {
+  await Promise.all([
+    sbSet('items',    items),
+    sbSet('incomes',  incomes),
+    sbSet('fixeds',   fixeds),
+    sbSet('saves',    saves),
+    sbSet('expcats',  expCats),
+    sbSet('inccats',  incCats),
+    sbSet('cards',    cards),
+    sbSet('accounts', accounts),
+    sbSet('memos',    memos),
+  ]);
+}
+
+async function loadAll() {
+  const [
+    itemsData, incomesData, fixedsData, savesData, assetsData,
+    expcatsData, inccatsData, cardsData, accountsData, memosData
+  ] = await Promise.all([
+    sbGet('items'), sbGet('incomes'), sbGet('fixeds'), sbGet('saves'), sbGet('assets'),
+    sbGet('expcats'), sbGet('inccats'), sbGet('cards'), sbGet('accounts'), sbGet('memos')
+  ]);
+  if (itemsData)    items    = itemsData;
+  if (incomesData)  incomes  = incomesData;
+  if (fixedsData)   fixeds   = fixedsData;
+  if (savesData)    saves    = savesData;
+  if (assetsData)   assets   = assetsData;
+  if (expcatsData)  expCats  = expcatsData;
+  if (inccatsData)  incCats  = inccatsData;
+  if (cardsData)    cards    = cardsData;
+  if (accountsData) accounts = accountsData;
+  if (memosData)    memos    = memosData;
+}
 
 // ── 기본 유틸 ──────────────────────────────
 function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
 
-function saveAll() {
-  localStorage.setItem('g_expcats', JSON.stringify(expCats));
-  localStorage.setItem('g_inccats', JSON.stringify(incCats));
-  localStorage.setItem('g_items',   JSON.stringify(items));
-  localStorage.setItem('g_incomes', JSON.stringify(incomes));
-  localStorage.setItem('g_fixeds',  JSON.stringify(fixeds));
-  localStorage.setItem('g_saves',   JSON.stringify(saves));
-}
+// saveAll → Supabase 버전으로 대체됨
 
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -953,9 +1006,9 @@ function setMonth(ym) {
   if (inpDate) inpDate.value = dateStr;
   if (incDate) incDate.value = dateStr;
   renderSummary();
-  const tabNames = ['fixed','add','income','saving','invest','asset','dash','cats'];
-  const activeIdx = [...document.querySelectorAll('.ntab')].findIndex(t=>t.classList.contains('active'));
-  const activeTab = tabNames[activeIdx];
+  // 현재 활성 페이지 id로 직접 감지
+  const activePage = document.querySelector('.page.active');
+  const activeTab = activePage ? activePage.id.replace('page-','') : 'fixed';
   if (activeTab==='add')    renderAddList();
   if (activeTab==='income') renderIncList();
   if (activeTab==='saving') renderSaving();
@@ -1186,7 +1239,7 @@ function deleteIncome(id){if(!confirm('삭제할까요?'))return;incomes=incomes
 // ── 자산 추이 ──────────────────────────────
 let assets = JSON.parse(localStorage.getItem('g_assets') || '[]');
 
-function saveAssets() { localStorage.setItem('g_assets', JSON.stringify(assets)); }
+
 
 let _astItemCount = 0;
 
@@ -1253,7 +1306,7 @@ function saveAsset() {
     assets.push({id:Date.now(), date, items, total});
   }
   assets.sort((a,b)=>a.date.localeCompare(b.date));
-  saveAssets();
+  saveAll();
   closeAssetModal();
   renderAssets();
   toast('자산 기록됐어요!');
@@ -1262,7 +1315,7 @@ function saveAsset() {
 function deleteAsset(id) {
   if (!confirm('삭제할까요?')) return;
   assets = assets.filter(a=>a.id!==id);
-  saveAssets(); renderAssets(); toast('삭제됐어요');
+  saveAll(); renderAssets(); toast('삭제됐어요');
 }
 
 let _assetChart = null;
@@ -2318,19 +2371,19 @@ function fUpdateSub() {
 
 // ── 메모 ──────────────────────────────────
 let memos = JSON.parse(localStorage.getItem('g_memos') || '[]');
-function saveMemos() { localStorage.setItem('g_memos', JSON.stringify(memos)); }
+
 
 function addMemo() {
   const inp = document.getElementById('memo-input');
   const text = inp.value.trim();
   if (!text) { toast('내용을 입력해주세요'); return; }
   memos.push({ id: Date.now(), text, date: new Date().toISOString().slice(0,10) });
-  saveMemos(); inp.value = ''; renderMemos(); toast('메모했어요!');
+  saveAll(); inp.value = ''; renderMemos(); toast('메모했어요!');
 }
 
 function deleteMemo(id) {
   if (!confirm('메모를 삭제할까요?')) return;
-  memos = memos.filter(m=>m.id!==id); saveMemos(); renderMemos();
+  memos = memos.filter(m=>m.id!==id); saveAll(); renderMemos();
 }
 
 function renderMemos() {
@@ -2388,7 +2441,7 @@ function completeMemo() {
   const bm = billingMonth(date, card);
   items.push({ id: Date.now(), type:'변동', card, date, main, sub, detail, amount, bm });
   memos = memos.filter(m=>m.id!==id);
-  saveAll(); saveMemos();
+  saveAll(); saveAll();
   closeMemoModal(); renderMemos(); renderAddList(); renderSummary();
   toast('지출로 등록됐어요!');
 }
@@ -2739,7 +2792,7 @@ function toggleSettle(itemId,e){
 // ── 계좌 관리 ──────────────────────────────
 const DEFAULT_ACCOUNTS = [];
 let accounts = JSON.parse(localStorage.getItem('g_accounts') || 'null') || JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
-function saveAccounts() { localStorage.setItem('g_accounts', JSON.stringify(accounts)); }
+
 
 function switchCardAccountForm(type, btn) {
   document.querySelectorAll('#form-type-card, #form-type-account').forEach(b=>{ b.classList.remove('on'); b.style.background=''; b.style.color=''; b.style.borderColor=''; });
@@ -2769,7 +2822,7 @@ function addAccount() {
   if (!name) { toast('계좌 이름을 입력해주세요'); return; }
   if (accounts.find(a=>a.name===name)) { toast('이미 등록된 계좌예요'); return; }
   accounts.push({id:Date.now(), name, type, color, textColor});
-  saveAccounts();
+  saveAll();
   document.getElementById('new-account-name').value = '';
   renderAccountList();
   rebuildAllCardTabs();
@@ -2779,7 +2832,7 @@ function addAccount() {
 function deleteAccount(id) {
   if (!confirm('계좌를 삭제할까요?')) return;
   accounts = accounts.filter(a=>a.id!==id);
-  saveAccounts();
+  saveAll();
   renderAccountList();
   rebuildAllCardTabs();
   toast('삭제됐어요');
@@ -2823,7 +2876,7 @@ function addCard() {
   if (!name) { toast('카드 이름을 입력해주세요'); return; }
   if (cards.find(c=>c.name===name)) { toast('이미 등록된 카드예요'); return; }
   cards.push({id:name, name, type, color, textColor});
-  saveCards();
+  saveAll();
   document.getElementById('new-card-name').value = '';
   renderCardList(); renderAccountList();
   rebuildAllCardTabs();
@@ -2835,7 +2888,7 @@ function deleteCard(id) {
   if (inUse && !confirm('이 카드로 등록된 지출 내역이 있어요. 그래도 삭제할까요?')) return;
   if (!confirm('카드를 삭제할까요?')) return;
   cards = cards.filter(c=>c.id!==id);
-  saveCards();
+  saveAll();
   renderCardList();
   rebuildAllCardTabs();
   toast('삭제됐어요');
@@ -2945,6 +2998,14 @@ function go(name) {
 }
 
 // ── 초기화 ──
+async function init() {
+  // 로딩 표시
+  document.getElementById('m-label').textContent = '로딩중...';
+  try {
+    await loadAll();
+  } catch(e) {
+    console.error('DB 로드 실패:', e);
+  }
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('inp-date').value  = today;
 
@@ -2972,6 +3033,8 @@ renderMemos();
 renderSaving();
 renderInvest();
 renderAssets();
+} // end init()
+init();
 </script>
 </body>
 </html>
